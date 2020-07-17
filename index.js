@@ -29,7 +29,7 @@ class ConventionalChangelog extends Plugin {
     this.setContext({ version });
 
     const previousTag = this.config.getContext('latestTag');
-    const tagTemplate = this.options.tagName || ((previousTag || '').match(/^v/) ? 'v${version}' : '${version}');
+    const tagTemplate = this.options.options.tagName || ((previousTag || '').match(/^v/) ? 'v${version}' : '${version}');
     const currentTag = tagTemplate.replace('${version}', version);
 
     return { version, previousTag, currentTag };
@@ -40,7 +40,7 @@ class ConventionalChangelog extends Plugin {
     if (version) return version;
     this.debug({ increment, latestVersion, isPreRelease, preReleaseId });
     return new Promise((resolve, reject) =>
-      conventionalRecommendedBump(this.options, (err, result) => {
+      conventionalRecommendedBump(this.options.options, (err, result) => {
         this.debug({ err, result });
         if (err) return reject(err);
         let { releaseType } = result;
@@ -65,11 +65,11 @@ class ConventionalChangelog extends Plugin {
   getChangelogStream(options = {}) {
     const { version, previousTag, currentTag } = this.getContext();
     return conventionalChangelog(
-      Object.assign(options, this.options),
-      { version, previousTag, currentTag },
-      {
+      Object.assign(options, this.options.options),
+      Object.assign(this.options.context || {},  { version, previousTag, currentTag }),
+      Object.assign(this.options.gitRawCommitsOpts || {},   {
         debug: this.config.isDebug ? this.debug : null
-      }
+      }),
     );
   }
 
@@ -83,7 +83,7 @@ class ConventionalChangelog extends Plugin {
   }
 
   async writeChangelog() {
-    const { infile } = this.options;
+    const { infile } = this.options.options;
     let { changelog } = this.config.getContext();
 
     let hasInfile = false;
@@ -112,7 +112,7 @@ class ConventionalChangelog extends Plugin {
   }
 
   async beforeRelease() {
-    const { infile } = this.options;
+    const { infile } = this.options.options;
     const { isDryRun } = this.global;
 
     this.log.exec(`Writing changelog to ${infile}`, isDryRun);
